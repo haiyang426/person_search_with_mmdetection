@@ -92,6 +92,7 @@ class BaseSampler(metaclass=ABCMeta):
         gt_bboxes = gt_instances.bboxes
         priors = pred_instances.priors
         gt_labels = gt_instances.labels
+        gt_ids = gt_instances.instance_ids
         if len(priors.shape) < 2:
             priors = priors[None, :]
 
@@ -105,7 +106,7 @@ class BaseSampler(metaclass=ABCMeta):
             else:
                 gt_bboxes_ = gt_bboxes
             priors = cat_boxes([gt_bboxes_, priors], dim=0)
-            assign_result.add_gt_(gt_labels)
+            assign_result.add_gt_(gt_labels, gt_ids)
             gt_ones = priors.new_ones(gt_bboxes_.shape[0], dtype=torch.uint8)
             gt_flags = torch.cat([gt_ones, gt_flags])
 

@@ -395,7 +395,7 @@ class CrossEntropyCustomLoss(CrossEntropyLoss):
         fine_cls_score = cls_score[:, :self.num_classes]
 
         pos_inds = labels < self.num_classes
-        acc_classes = accuracy(fine_cls_score[pos_inds], labels[pos_inds])
+        acc_classes = accuracy(fine_cls_score[pos_inds], labels[pos_inds], thresh=0.5)
         acc = dict()
         acc['acc_classes'] = acc_classes
         return acc

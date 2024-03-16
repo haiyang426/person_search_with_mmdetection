@@ -44,7 +44,10 @@ class PackDetInputs(BaseTransform):
     mapping_table = {
         'gt_bboxes': 'bboxes',
         'gt_bboxes_labels': 'labels',
-        'gt_masks': 'masks'
+        'gt_masks': 'masks',
+        'gt_bboxes_instance_ids' : 'instance_ids',
+        'gt_bboxes_cam_ids' : 'cam_ids',
+        'gt_bboxes_query_flag' : 'query_flag'
     }
 
     def __init__(self,

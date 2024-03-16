@@ -39,11 +39,12 @@ class AssignResult(util_mixins.NiceRepr):
     """
 
     def __init__(self, num_gts: int, gt_inds: Tensor, max_overlaps: Tensor,
-                 labels: Tensor) -> None:
+                 labels: Tensor, ids:Tensor) -> None:
         self.num_gts = num_gts
         self.gt_inds = gt_inds
         self.max_overlaps = max_overlaps
         self.labels = labels
+        self.ids=ids
         # Interface for possible user-defined properties
         self._extra_properties = {}
 
@@ -70,6 +71,7 @@ class AssignResult(util_mixins.NiceRepr):
             'gt_inds': self.gt_inds,
             'max_overlaps': self.max_overlaps,
             'labels': self.labels,
+            'ids':self.ids,
         }
         basic_info.update(self._extra_properties)
         return basic_info
@@ -91,6 +93,11 @@ class AssignResult(util_mixins.NiceRepr):
             parts.append(f'labels={self.labels!r}')
         else:
             parts.append(f'labels.shape={tuple(self.labels.shape)!r}')
+
+        if self.ids is None:
+            parts.append(f'ids={self.ids!r}')
+        else:
+            parts.append(f'ids.shape={tuple(self.ids.shape)!r}')
         return ', '.join(parts)
 
     @classmethod
@@ -133,6 +140,7 @@ class AssignResult(util_mixins.NiceRepr):
             max_overlaps = torch.zeros(num_preds, dtype=torch.float32)
             gt_inds = torch.zeros(num_preds, dtype=torch.int64)
             labels = torch.zeros(num_preds, dtype=torch.int64)
+            ids = torch.zeros(num_preds, dtype=torch.int64)
 
         else:
             import numpy as np
@@ -171,6 +179,7 @@ class AssignResult(util_mixins.NiceRepr):
 
             if num_classes == 0:
                 labels = torch.zeros(num_preds, dtype=torch.int64)
+                ids = torch.zeros(num_preds, dtype=torch.int64)
             else:
                 labels = torch.from_numpy(
                     # remind that we set FG labels to [0, num_class-1]
@@ -182,7 +191,7 @@ class AssignResult(util_mixins.NiceRepr):
         self = cls(num_gts, gt_inds, max_overlaps, labels)
         return self
 
-    def add_gt_(self, gt_labels):
+    def add_gt_(self, gt_labels, gt_ids):
         """Add ground truth as assigned results.
 
         Args:
@@ -196,3 +205,5 @@ class AssignResult(util_mixins.NiceRepr):
             [self.max_overlaps.new_ones(len(gt_labels)), self.max_overlaps])
 
         self.labels = torch.cat([gt_labels, self.labels])
+        
+        self.ids = torch.cat([gt_ids, self.ids])

@@ -299,11 +299,25 @@ class LoadAnnotations(MMCV_LoadAnnotations):
             dict: The dict contains loaded label annotations.
         """
         gt_bboxes_labels = []
+        gt_bboxes_instance_ids = []
+        gt_bboxes_cam_ids = []
+        gt_bboxes_query_flag = []
+        
         for instance in results.get('instances', []):
             gt_bboxes_labels.append(instance['bbox_label'])
+        for instance in results.get('instances', []):
+            gt_bboxes_instance_ids.append(instance['instance_id'])
+            gt_bboxes_cam_ids.append(instance['cam_id'])
+            gt_bboxes_query_flag.append(instance['query_flag'])
         # TODO: Inconsistent with mmcv, consider how to deal with it later.
         results['gt_bboxes_labels'] = np.array(
             gt_bboxes_labels, dtype=np.int64)
+        results['gt_bboxes_instance_ids'] = np.array(
+            gt_bboxes_instance_ids, dtype=np.int64)
+        results['gt_bboxes_cam_ids'] = np.array(
+            gt_bboxes_cam_ids, dtype=np.int64)
+        results['gt_bboxes_query_flag'] = np.array(
+            gt_bboxes_query_flag, dtype=np.int64)
 
     def _poly2mask(self, mask_ann: Union[list, dict], img_h: int,
                    img_w: int) -> np.ndarray:

@@ -195,6 +195,7 @@ class MaxIoUAssigner(BaseAssigner):
         gt_bboxes = gt_instances.bboxes
         priors = pred_instances.priors
         gt_labels = gt_instances.labels
+        gt_ids = gt_instances.instance_ids
         if gt_instances_ignore is not None:
             gt_bboxes_ignore = gt_instances_ignore.bboxes
         else:
@@ -208,6 +209,7 @@ class MaxIoUAssigner(BaseAssigner):
             priors = priors.cpu()
             gt_bboxes = gt_bboxes.cpu()
             gt_labels = gt_labels.cpu()
+            gt_ids = gt_ids.cpu()
             if gt_bboxes_ignore is not None:
                 gt_bboxes_ignore = gt_bboxes_ignore.cpu()
 
@@ -231,7 +233,7 @@ class MaxIoUAssigner(BaseAssigner):
                 ignore_max_overlaps, _ = ignore_overlaps.max(dim=0)
             overlaps[:, ignore_max_overlaps > self.ignore_iof_thr] = -1
 
-        assign_result = self.assign_wrt_overlaps(overlaps, gt_labels)
+        assign_result = self.assign_wrt_overlaps(overlaps, gt_labels, gt_ids)
         if assign_on_cpu:
             assign_result.gt_inds = assign_result.gt_inds.to(device)
             assign_result.max_overlaps = assign_result.max_overlaps.to(device)
@@ -240,7 +242,8 @@ class MaxIoUAssigner(BaseAssigner):
         return assign_result
 
     def assign_wrt_overlaps(self, overlaps: Tensor,
-                            gt_labels: Tensor) -> AssignResult:
+                            gt_labels: Tensor,
+                            gt_ids: Tensor) -> AssignResult:
         """Assign w.r.t. the overlaps of priors with gts.
 
         Args:
@@ -264,6 +267,9 @@ class MaxIoUAssigner(BaseAssigner):
             assigned_labels = overlaps.new_full((num_bboxes, ),
                                                 -1,
                                                 dtype=torch.long)
+            assigned_ids = overlaps.new_full((num_bboxes, ),
+                                                -1,
+                                                dtype=torch.long)
             if num_gts == 0:
                 # No truth, assign everything to background
                 assigned_gt_inds[:] = 0
@@ -271,7 +277,8 @@ class MaxIoUAssigner(BaseAssigner):
                 num_gts=num_gts,
                 gt_inds=assigned_gt_inds,
                 max_overlaps=max_overlaps,
-                labels=assigned_labels)
+                labels=assigned_labels,
+                ids=assigned_ids)
 
         # for each anchor, which gt best overlaps with it
         # for each anchor, the max iou of all gts
@@ -312,14 +319,18 @@ class MaxIoUAssigner(BaseAssigner):
                         assigned_gt_inds[gt_argmax_overlaps[i]] = i + 1
 
         assigned_labels = assigned_gt_inds.new_full((num_bboxes, ), -1)
+        assigned_ids = assigned_gt_inds.new_full((num_bboxes, ), -1)
         pos_inds = torch.nonzero(
             assigned_gt_inds > 0, as_tuple=False).squeeze()
         if pos_inds.numel() > 0:
             assigned_labels[pos_inds] = gt_labels[assigned_gt_inds[pos_inds] -
+                                                  1]
+            assigned_ids[pos_inds] = gt_ids[assigned_gt_inds[pos_inds] -
                                                   1]
 
         return AssignResult(
             num_gts=num_gts,
             gt_inds=assigned_gt_inds,
             max_overlaps=max_overlaps,
-            labels=assigned_labels)
+            labels=assigned_labels,
+            ids=assigned_ids)
