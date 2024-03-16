@@ -13,6 +13,15 @@
     cd person_search_with_mmdetection  
     pip install -v -e .
 
+## dataset
+    download PRWdataset into data
+    ---person search with mmdetection
+      |---data
+         |---PRW
+
+    mkdir annotations_coco
+    python tools/dataset_converters/prw2coco.py -i data/PRW -o data/PRW/annotations_coco
+
 More installation details can be viewed [here](https://mmdetection.readthedocs.io/en/latest/get_started.html)
 
 ## model
