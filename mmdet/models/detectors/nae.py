@@ -1,10 +1,11 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 from mmdet.registry import MODELS
-from mmdet.utils import ConfigType, OptConfigType, OptMultiConfig
+from mmdet.utils import ConfigType, OptConfigType, OptMultiConfig, InstanceList
 from mmdet.structures import DetDataSample, OptSampleList, SampleList
 from mmdet.structures.bbox import bbox2roi
 from .two_stage import TwoStageDetector
 from typing import Dict, List, Tuple, Union
+from ..utils import samplelist_boxtype2tensor
 
 import torch
 from torch import Tensor
@@ -41,6 +42,8 @@ class NAE(TwoStageDetector):
                  batch_data_samples):
         gt_bbox_list = [data_s.gt_instances.bboxes for data_s in batch_data_samples]
         rois = bbox2roi(gt_bbox_list)
+        bbox_results = self._bbox_forward(inputs, rois)
+        
 
     def extract_step(self, data: Union[tuple, dict, list]) -> list:
         """Gets the predictions of given data.
@@ -100,8 +103,20 @@ class NAE(TwoStageDetector):
                 data_sample.proposals for data_sample in batch_data_samples
             ]
 
+        gt_rpn_results_list = [
+            data_sample.gt_instances.bboxes * batch_data_samples[0].gt_instances.bboxes.new_tensor(data_sample.scale_factor).repeat((1, 2)) for data_sample in batch_data_samples
+        ]
+        num_proposals_per_img = tuple(len(p) for p in gt_rpn_results_list)
         results_list = self.roi_head.predict(
             x, rpn_results_list, batch_data_samples, rescale=rescale)
+        rois = bbox2roi(gt_rpn_results_list)
+        gt_results = self.roi_head._bbox_forward(x, rois)
+        id_preds = gt_results['id_pred'].split(num_proposals_per_img, 0)
+        
+        for idx, batch_data_sample in enumerate(batch_data_samples):
+            batch_data_sample.gt_instances.id_preds = id_preds[idx]  
+        
+        # gt_results
 
         batch_data_samples = self.add_pred_to_datasample(
             batch_data_samples, results_list)
@@ -151,3 +166,31 @@ class NAE(TwoStageDetector):
         else:
             raise RuntimeError(f'Invalid mode "{mode}". '
                                'Only supports loss, predict and tensor mode')
+            
+    def add_pred_to_datasample(self, data_samples: SampleList,
+                               results_list: InstanceList) -> SampleList:
+        """Add predictions to `DetDataSample`.
+
+        Args:
+            data_samples (list[:obj:`DetDataSample`], optional): A batch of
+                data samples that contain annotations and predictions.
+            results_list (list[:obj:`InstanceData`]): Detection results of
+                each image.
+
+        Returns:
+            list[:obj:`DetDataSample`]: Detection results of the
+            input images. Each DetDataSample usually contain
+            'pred_instances'. And the ``pred_instances`` usually
+            contains following keys.
+
+                - scores (Tensor): Classification scores, has a shape
+                    (num_instance, )
+                - labels (Tensor): Labels of bboxes, has a shape
+                    (num_instances, ).
+                - bboxes (Tensor): Has a shape (num_instances, 4),
+                    the last dimension 4 arrange as (x1, y1, x2, y2).
+        """
+        for data_sample, pred_instances in zip(data_samples, results_list):
+            data_sample.pred_instances = pred_instances
+        samplelist_boxtype2tensor(data_samples)
+        return data_samples

@@ -75,7 +75,16 @@ model = dict(
             reg_class_agnostic=False,
             loss_cls=dict(
                 type='CrossEntropyLoss', use_sigmoid=False, loss_weight=1.0),
-            loss_bbox=dict(type='SmoothL1Loss', beta=1.0, loss_weight=1.0))),
+            loss_bbox=dict(type='SmoothL1Loss', beta=1.0, loss_weight=1.0),
+            loss_id=dict(
+                type='OIMLoss', 
+                num_features=256,
+                num_pids=482,
+                num_cq_size=500,
+                oim_momentum=0.5,
+                oim_scalar=30,
+                loss_weight=1.0,
+                 ))),
     # model training and testing settings
     train_cfg=dict(
         rpn=dict(
@@ -99,7 +108,7 @@ model = dict(
             nms_pre=12000,
             max_per_img=2000,
             nms=dict(type='nms', iou_threshold=0.7),
-            min_bbox_size=0),
+            min_bbox_size=8),
         rcnn=dict(
             assigner=dict(
                 type='MaxIoUAssigner',

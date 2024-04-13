@@ -412,19 +412,33 @@ class PRWMetric(BaseMetric):
                 query_result['cam_id'] = data_sample['gt_instances']['cam_ids'][idx].cpu().numpy()
                 query_result['instance_ids'] = data_sample['gt_instances']['instance_ids'][idx].cpu().numpy()
                 query_result['bbox'] = data_sample['gt_instances']['bboxes'][idx].cpu().numpy()
-                if pred['bboxes'].shape[0] == 0:
-                    query_result['feat'] = np.zeros((256, ))
-                    # self.query.append(np.zeros((256, )))
-                    # continue
-                else:
-                    iou, iou_max, nmax = self.calculate_iou(pred['bboxes'], data_sample['gt_instances']['bboxes'][idx])
-                    if iou_max < 0.5: 
-                        self.not_detect_count += 1
-                        logger.info('not detected: {}, not_detect_count:{}, iou: {}'.format(data_sample['img_path'], self.not_detect_count, iou_max))
-                        
-                    query_result['feat'] = result['ids'][nmax]
-                    
+                query_result['feat'] = data_sample['gt_instances']['id_preds'][idx].cpu().numpy()
+                
                 self.query.append(query_result)
+
+            # if data_sample['gt_instances']['query_flag'].sum()>0:
+            #     query_flag = data_sample['gt_instances']['query_flag'].bool()
+            #     query_result = dict()
+            #     query_result['img_id'] = data_sample['img_id']
+            #     query_result['cam_id'] = data_sample['gt_instances']['cam_ids'][query_flag].cpu().numpy()
+            #     query_result['instance_ids'] = data_sample['gt_instances']['instance_ids'][query_flag].cpu().numpy()
+            #     query_result['bbox'] = data_sample['gt_instances']['bboxes'][query_flag].cpu().numpy()
+            #     query_result['feat'] = data_sample['gt_instances']['id_preds'][query_flag].cpu().numpy()
+                
+                
+            #     if pred['bboxes'].shape[0] == 0:
+            #         query_result['feat'] = np.zeros((256, ))
+            #         # self.query.append(np.zeros((256, )))
+            #         # continue
+            #     else:
+            #         iou, iou_max, nmax = self.calculate_iou(pred['bboxes'], data_sample['gt_instances']['bboxes'][idx])
+            #         if iou_max < 0.5: 
+            #             self.not_detect_count += 1
+            #             logger.info('not detected: {}, not_detect_count:{}, iou: {}'.format(data_sample['img_path'], self.not_detect_count, iou_max))
+                        
+            #         query_result['feat'] = result['ids'][nmax]
+                    
+                
 
             self.results.append((gt, result))
 
