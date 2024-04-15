@@ -416,30 +416,6 @@ class PRWMetric(BaseMetric):
                 
                 self.query.append(query_result)
 
-            # if data_sample['gt_instances']['query_flag'].sum()>0:
-            #     query_flag = data_sample['gt_instances']['query_flag'].bool()
-            #     query_result = dict()
-            #     query_result['img_id'] = data_sample['img_id']
-            #     query_result['cam_id'] = data_sample['gt_instances']['cam_ids'][query_flag].cpu().numpy()
-            #     query_result['instance_ids'] = data_sample['gt_instances']['instance_ids'][query_flag].cpu().numpy()
-            #     query_result['bbox'] = data_sample['gt_instances']['bboxes'][query_flag].cpu().numpy()
-            #     query_result['feat'] = data_sample['gt_instances']['id_preds'][query_flag].cpu().numpy()
-                
-                
-            #     if pred['bboxes'].shape[0] == 0:
-            #         query_result['feat'] = np.zeros((256, ))
-            #         # self.query.append(np.zeros((256, )))
-            #         # continue
-            #     else:
-            #         iou, iou_max, nmax = self.calculate_iou(pred['bboxes'], data_sample['gt_instances']['bboxes'][idx])
-            #         if iou_max < 0.5: 
-            #             self.not_detect_count += 1
-            #             logger.info('not detected: {}, not_detect_count:{}, iou: {}'.format(data_sample['img_path'], self.not_detect_count, iou_max))
-                        
-            #         query_result['feat'] = result['ids'][nmax]
-                    
-                
-
             self.results.append((gt, result))
 
     def calculate_iou(self, pred_boxes, gt_box):
@@ -488,7 +464,7 @@ class PRWMetric(BaseMetric):
         union = (a[2] - a[0]) * (a[3] - a[1]) + (b[2] - b[0]) * (b[3] - b[1]) - inter
         return inter * 1.0 / union
     
-    def compute_metrics(self, results: list) -> Dict[str, float]:
+    def compute_metrics(self, results: list, querys) -> Dict[str, float]:
         """Compute the metrics from processed results.
 
         Args:
@@ -510,7 +486,7 @@ class PRWMetric(BaseMetric):
         #     pred['scores'] = pred['scores'][keeps]
         
         # instance_ids = np.concatenate([gt['instance_ids'] for gt in gts])
-        querys = collect_results(self.query, 6112, self.collect_device)
+        # querys = collect_results(self.query, 6112, self.collect_device)
         aps = []
         accs = []
         topk = [1, 5, 10]
@@ -765,7 +741,12 @@ class PRWMetric(BaseMetric):
                     key = f'{metric}_{metric_item}'
                     val = coco_eval.stats[coco_metric_names[metric_item]]
                     eval_results[key] = float(f'{round(val, 3)}')
-
+                eval_results['ReID: mAP'] = mAP
+                eval_results['Top-1'] = accs[0]
+                eval_results['Top-5'] = accs[1]
+                eval_results['Top-10'] = accs[2]
+                
+                
                 ap = coco_eval.stats[:6]
                 logger.info(f'{metric}_mAP_copypaste: {ap[0]:.3f} '
                             f'{ap[1]:.3f} {ap[2]:.3f} {ap[3]:.3f} '
@@ -805,13 +786,20 @@ class PRWMetric(BaseMetric):
                 size,
                 self.collect_device,
                 tmpdir=self.collect_dir)
+            querys = collect_results(
+                self.query, 
+                6112, 
+                self.collect_device,
+                tmpdir=self.collect_dir)
         else:
             results = collect_results(self.results, size, self.collect_device)
+            querys = collect_results(self.query, 6112, self.collect_device)
 
         if is_main_process():
             # cast all tensors in results list to cpu
             results = _to_cpu(results)
-            _metrics = self.compute_metrics(results)  # type: ignore
+            querys = _to_cpu(querys)
+            _metrics = self.compute_metrics(results, querys)  # type: ignore
             # Add prefix to metric names
             if self.prefix:
                 _metrics = {

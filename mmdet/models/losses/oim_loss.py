@@ -7,14 +7,22 @@ import torch.nn.functional as F
 from torch import autograd, nn
 
 from mmdet.registry import MODELS
-from mmengine.dist import all_gather
+from mmengine.dist import all_gather_object, get_data_device, cast_data_device
 
 class OIM(autograd.Function):
     @staticmethod
     def forward(ctx, inputs, targets, lut, cq, header, momentum):
-        ctx.save_for_backward(inputs, targets, lut, cq, header, momentum)
         outputs_labeled = inputs.mm(lut.t())
         outputs_unlabeled = inputs.mm(cq.t())
+        # print(inputs)
+        # print(targets)
+        input_device = get_data_device(inputs)
+        
+        inputs = torch.cat(cast_data_device(all_gather_object(inputs), input_device), dim=0)
+        targets = torch.cat(cast_data_device(all_gather_object(targets), input_device), dim=0)
+        # print(targets)
+        ctx.save_for_backward(inputs, targets, lut, cq, header, momentum)
+        
         return torch.cat([outputs_labeled, outputs_unlabeled], dim=1)
 
     @staticmethod
