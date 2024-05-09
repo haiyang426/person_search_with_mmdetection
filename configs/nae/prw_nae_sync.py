@@ -3,7 +3,7 @@ _base_ = [
     '../_base_/schedules/schedule_1x.py', '../_base_/default_runtime.py'
 ]
 
-norm_cfg = dict(type='BN', requires_grad=True)
+norm_cfg = dict(type='SyncBN', requires_grad=True)
 model = dict(
     type='NAE',
     data_preprocessor=dict(
@@ -75,7 +75,7 @@ model = dict(
             reg_class_agnostic=False,
             loss_cls=dict(
                 type='CrossEntropyLoss', use_sigmoid=False, loss_weight=1.0),
-            loss_bbox=dict(type='SmoothL1Loss', beta=1.0, loss_weight=10),
+            loss_bbox=dict(type='SmoothL1Loss', beta=1.0, loss_weight=1.0),
             loss_id=dict(
                 type='OIMLoss', 
                 num_features=256,
@@ -177,8 +177,8 @@ test_pipeline = [
                    'scale_factor'))
 ]
 train_dataloader = dict(
-    batch_size=5,
-    num_workers=5,
+    batch_size=4,
+    num_workers=4,
     persistent_workers=True,
     sampler=dict(type='DefaultSampler', shuffle=True),
     batch_sampler=dict(type='AspectRatioBatchSampler'),
@@ -253,11 +253,11 @@ test_cfg = dict(type='TestLoop')
 # learning rate
 param_scheduler = [
     dict(
-        type='LinearLR', start_factor=0.003, by_epoch=False, begin=0, end=500),
+        type='LinearLR', start_factor=0.001, by_epoch=False, begin=0, end=500),
     dict(
         type='MultiStepLR',
         begin=0,
-        end=22,
+        end=20,
         by_epoch=True,
         milestones=[16, ],
         gamma=0.1)

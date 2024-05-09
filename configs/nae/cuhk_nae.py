@@ -79,8 +79,8 @@ model = dict(
             loss_id=dict(
                 type='OIMLoss', 
                 num_features=256,
-                num_pids=482,
-                num_cq_size=500,
+                num_pids=5532,
+                num_cq_size=5000,
                 oim_momentum=0.5,
                 oim_scalar=30,
                 loss_weight=1.0,
@@ -141,7 +141,7 @@ model = dict(
 
 # dataset settings
 dataset_type = 'PRWDataset'
-data_root = 'data/PRW/'
+data_root = 'data/CUHK-SYSU/'
 
 # Example to use different file client
 # Method 1: simply set the data root and let the file I/O module
@@ -211,7 +211,7 @@ val_dataloader = dict(
 test_dataloader = val_dataloader
 
 val_evaluator = dict(
-    type='PRWMetric',
+    type='CUHKMetric',
     ann_file=data_root + 'annotations_coco/test_cocoformat.json',
     metric='bbox',
     format_only=False,
@@ -246,14 +246,14 @@ train_cluster_dataloader = dict(
 
 
 # training schedule for 20e
-train_cfg = dict(type='EpochBasedTrainLoop', max_epochs=20, val_interval=1)
+train_cfg = dict(type='EpochBasedTrainLoop', max_epochs=22, val_interval=1)
 val_cfg = dict(type='ValLoop')
 test_cfg = dict(type='TestLoop')
 
 # learning rate
 param_scheduler = [
     dict(
-        type='LinearLR', start_factor=0.003, by_epoch=False, begin=0, end=500),
+        type='LinearLR', start_factor=0.001, by_epoch=False, begin=0, end=2242),
     dict(
         type='MultiStepLR',
         begin=0,

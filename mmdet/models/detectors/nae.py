@@ -14,7 +14,8 @@ ForwardResults = Union[Dict[str, torch.Tensor], List[DetDataSample],
 
 @MODELS.register_module()
 class NAE(TwoStageDetector):
-    """Implementation of `Faster R-CNN <https://arxiv.org/abs/1506.01497>`_"""
+    """Implementation of `Norm-Aware Embedding for Efﬁcient Person Search 
+    <https://openaccess.thecvf.com/content_CVPR_2020/papers/Chen_Norm-Aware_Embedding_for_Efficient_Person_Search_CVPR_2020_paper.pdf>`_"""
 
     def __init__(self,
                  backbone: ConfigType,
