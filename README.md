@@ -14,13 +14,17 @@
     pip install -v -e .
 
 ## dataset
-    download PRWdataset into data
+    download PRW and CUHK-SYSU into data
     ---person search with mmdetection
       |---data
          |---PRW
+         |---CUHK-SYSU
 
     mkdir annotations_coco
     python tools/dataset_converters/prw2coco.py -i data/PRW -o data/PRW/annotations_coco
+
+    mkdir annotations_coco
+    python tools/dataset_converters/cuhk2coco.py -i data/CUHK-SYSU/ -o data/CUHK-SYSU/annotations_coco
 
 More installation details can be viewed [here](https://mmdetection.readthedocs.io/en/latest/get_started.html)
 
@@ -28,7 +32,7 @@ More installation details can be viewed [here](https://mmdetection.readthedocs.i
 [nae](configs/nae/README.md)
 
 ## To be completed 待完成
-1. Support for the CUHK-SYSU, PoseTrack21 and MovieNet-PS dataset (CUHK-SYSU, PoseTrack21和MovieNet-PS数据集的支持)
+1. Support for the PoseTrack21 and MovieNet-PS dataset (PoseTrack21和MovieNet-PS数据集的支持)
 2. SeqNet, COAT, PSTR, Align, CGPS, R-SiamNet等模型的复现
 3. CBGM算法
 

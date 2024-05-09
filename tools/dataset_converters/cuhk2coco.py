@@ -16,9 +16,9 @@ from PIL import Image
 def parse_args():
     parser = argparse.ArgumentParser(
         description='Convert PRW label and detections to COCO format.')
-    parser.add_argument('-i', '--input', default='/data/zhy/person_search_with_mmdetection/data/CUHK-SYSU/', type=str, help='The root path of PRW')
+    parser.add_argument('-i', '--input', default='', type=str, help='The root path of PRW')
     parser.add_argument(
-        '-o', '--output', type=str, default='/data/zhy/person_search_with_mmdetection/data/CUHK-SYSU/annotations_coco', help='path to save coco formatted label file')
+        '-o', '--output', type=str, default='', help='path to save coco formatted label file')
     return parser.parse_args()
 
 
