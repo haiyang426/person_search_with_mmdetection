@@ -59,6 +59,7 @@ from .yolo import YOLOV3
 from .yolof import YOLOF
 from .yolox import YOLOX
 from .nae import NAE
+from .seqnet import SeqNet
 __all__ = [
     'ATSS', 'BaseDetector', 'SingleStageDetector', 'TwoStageDetector', 'RPN',
     'KnowledgeDistillationSingleStageDetector', 'FastRCNN', 'FasterRCNN',
@@ -71,5 +72,5 @@ __all__ = [
     'MaskFormer', 'DDOD', 'Mask2Former', 'SemiBaseDetector', 'SoftTeacher',
     'RTMDet', 'Detectron2Wrapper', 'CrowdDet', 'CondInst', 'BoxInst',
     'DetectionTransformer', 'ConditionalDETR', 'DINO', 'DABDETR', 'GLIP',
-    'DDQDETR', 'GroundingDINO', 'NAE'
+    'DDQDETR', 'GroundingDINO', 'NAE', 'SeqNet'
 ]

@@ -29,7 +29,7 @@
 More installation details can be viewed [here](https://mmdetection.readthedocs.io/en/latest/get_started.html)
 
 ## model
-[nae](configs/nae/README.md)
+[nae](configs/nae/README.md),  [SeqNet](configs/seqnet/README.md)
 
 ## To be completed 待完成
 1. Support for the PoseTrack21 and MovieNet-PS dataset (PoseTrack21和MovieNet-PS数据集的支持)

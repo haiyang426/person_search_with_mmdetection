@@ -16,7 +16,7 @@ from mmdet.models.task_modules.samplers import SamplingResult
 from mmdet.models.utils import empty_instances, multi_apply
 from mmdet.registry import MODELS, TASK_UTILS
 from mmdet.structures.bbox import get_box_tensor, scale_boxes
-from mmdet.utils import ConfigType, InstanceList, OptMultiConfig
+from mmdet.utils import ConfigType, InstanceList, OptMultiConfig, OptConfigType
 
 
 @MODELS.register_module()
@@ -28,6 +28,7 @@ class NaeHead(BaseModule):
                  with_avg_pool: bool = False,
                  with_cls: bool = True,
                  with_reg: bool = True,
+                 with_id: bool = True,
                  roi_feat_size: int = 7,
                  in_channels: int = 256,
                  num_classes: int = 80,
@@ -56,6 +57,7 @@ class NaeHead(BaseModule):
                      oim_scalar=30,
                      loss_weight=1.0,
                  ),
+                 shared_head: OptConfigType = None,
                  init_cfg: OptMultiConfig = None) -> None:
         super().__init__(init_cfg=init_cfg)
         assert with_cls or with_reg
@@ -118,19 +120,23 @@ class NaeHead(BaseModule):
                 #         type='Normal', std=0.001, override=dict(name='fc_reid'))
                 # ]
         
+        if shared_head is not None:
+            self.shared_head = MODELS.build(shared_head)
         
         ## reid
-        self.loss_id = MODELS.build(loss_id)
-        # self.loss_triplet = MODELS.build(loss_triplet)
-        # self.use_Quaduplet2Loss = use_Quaduplet2Loss
-        # self.fc_reid = nn.Linear(in_channels * self.roi_feat_area, 256) 
-        self.fc_reid = nn.Sequential(
-                nn.Linear(in_channels, 256), 
-                nn.BatchNorm1d(256))
-        nn.init.normal_(self.fc_reid[0].weight, std=0.01)
-        nn.init.normal_(self.fc_reid[1].weight, std=0.01)
-        nn.init.constant_(self.fc_reid[0].bias, 0)
-        nn.init.constant_(self.fc_reid[1].bias, 0)
+        self.with_id = with_id
+        if self.with_id:
+            self.loss_id = MODELS.build(loss_id)
+            # self.loss_triplet = MODELS.build(loss_triplet)
+            # self.use_Quaduplet2Loss = use_Quaduplet2Loss
+            # self.fc_reid = nn.Linear(in_channels * self.roi_feat_area, 256) 
+            self.fc_reid = nn.Sequential(
+                    nn.Linear(in_channels, 256), 
+                    nn.BatchNorm1d(256))
+            nn.init.normal_(self.fc_reid[0].weight, std=0.01)
+            nn.init.normal_(self.fc_reid[1].weight, std=0.01)
+            nn.init.constant_(self.fc_reid[0].bias, 0)
+            nn.init.constant_(self.fc_reid[1].bias, 0)
 
         # self.fc_reid1 = nn.Sequential(
         #         nn.Linear(in_channels, 128), 
@@ -140,7 +146,7 @@ class NaeHead(BaseModule):
         # nn.init.constant_(self.fc_reid[0].bias, 0)
         # nn.init.constant_(self.fc_reid[1].bias, 0)
 
-        self.rescaler = nn.BatchNorm1d(1, affine=True)
+            self.rescaler = nn.BatchNorm1d(1, affine=True)
     # TODO: Create a SeasawBBoxHead to simplified logic in BBoxHead
     @property
     def custom_cls_channels(self) -> bool:
@@ -171,7 +177,7 @@ class NaeHead(BaseModule):
         # gt_id_pred = F.normalize(self.fc_reid(feat_g.view(feat_g.size(0), -1)))
         return id_pred
     
-    def forward(self, feat_p_before: Tuple[Tensor], feat_p_after: Tuple[Tensor]) -> tuple:
+    def forward(self, feat_p_before: Tuple[Tensor]) -> tuple:
         """Forward features from the upstream network.
 
         Args:
@@ -199,6 +205,8 @@ class NaeHead(BaseModule):
         #         # avg_pool does not support empty tensor,
         #         # so use torch.mean instead it
         #         x = torch.mean(x, dim=(-1, -2))
+        feat_p_after= self.shared_head(feat_p_before)
+        
         feat_p_after = F.adaptive_max_pool2d(feat_p_after, 1).flatten(1)
         # feat_p_after = x
         cls_score = self.fc_cls(feat_p_after) if self.with_cls else None
@@ -210,18 +218,21 @@ class NaeHead(BaseModule):
         # x_reid = F.adaptive_max_pool2d(x_reid, 1).flatten(1)
         # id_pred = torch.cat([self.fc_reid(feat_p_before), self.fc_reid1(feat_p_after)], dim=-1)
         # cls_score = 
-        id_pred = self.fc_reid(feat_p_after)
-        norms = id_pred.norm(2, 1, keepdim=True)
-        id_pred = id_pred/norms.expand_as(id_pred).clamp(min=1e-12)
-        fg_score = self.rescaler(norms)
+        if self.with_id:
+            id_pred = self.fc_reid(feat_p_after)
+            norms = id_pred.norm(2, 1, keepdim=True)
+            id_pred = id_pred/norms.expand_as(id_pred).clamp(min=1e-12)
+            fg_score = self.rescaler(norms)
+            
+            score_classes = fg_score.sigmoid()
+            score_neg = 1 - score_classes.sum(dim=1, keepdim=True)
+            score_neg = score_neg.clamp(min=0, max=1)
+            fg_score = torch.cat([score_classes, score_neg], dim=1)
+            cls_score = cls_score * fg_score
         
-        score_classes = fg_score.sigmoid()
-        score_neg = 1 - score_classes.sum(dim=1, keepdim=True)
-        score_neg = score_neg.clamp(min=0, max=1)
-        fg_score = torch.cat([score_classes, score_neg], dim=1)
-        cls_score = cls_score * fg_score
-        
-        return cls_score, bbox_pred, id_pred
+            return cls_score, bbox_pred, id_pred
+        else:
+            return cls_score, bbox_pred, None
 
     def _get_targets_single(self, pos_priors: Tensor, neg_priors: Tensor,
                             pos_gt_bboxes: Tensor, pos_gt_labels: Tensor,

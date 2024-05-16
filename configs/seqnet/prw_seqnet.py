@@ -2,10 +2,10 @@ _base_ = [
     '../_base_/datasets/coco_detection.py',
     '../_base_/schedules/schedule_1x.py', '../_base_/default_runtime.py'
 ]
-
 norm_cfg = dict(type='BN', requires_grad=True)
+# model settings
 model = dict(
-    type='NAE',
+    type='SeqNet',
     data_preprocessor=dict(
         type='DetDataPreprocessor',
         mean=[123.675, 116.28, 103.53],
@@ -43,48 +43,90 @@ model = dict(
             type='CrossEntropyLoss', use_sigmoid=True, loss_weight=1.0),
         loss_bbox=dict(type='L1Loss', loss_weight=1.0)),
     roi_head=dict(
-        type='NaeRoIHead',
+        type='SeqNetRoIHead',
+        num_stages=2,
+        stage_loss_weights=[1, 1],
         bbox_roi_extractor=dict(
             type='SingleRoIExtractor',
             roi_layer=dict(type='RoIAlign', output_size=14, sampling_ratio=0),
             out_channels=1024,
             featmap_strides=[16]),
-        bbox_head=dict(
-            type='NaeHead',
-            with_avg_pool=True,
-            with_cls=True,
-            roi_feat_size=7,
-            in_channels=2048,
-            num_classes=1,
-            bbox_coder=dict(
-                type='DeltaXYWHBBoxCoder',
-                target_means=[0., 0., 0., 0.],
-                target_stds=[0.1, 0.1, 0.2, 0.2]),
-            reg_class_agnostic=False,
-            loss_cls=dict(
-                type='CrossEntropyLoss', use_sigmoid=False, loss_weight=1.0),
-            loss_bbox=dict(type='SmoothL1Loss', beta=1.0, loss_weight=10),
-            loss_id=dict(
-                type='OIMLoss', 
-                num_features=256,
-                num_pids=482,
-                num_cq_size=500,
-                oim_momentum=0.5,
-                oim_scalar=30,
-                loss_weight=1.0,
-                 ),
-            shared_head=dict(
-            type='ResLayer',
-            depth=50,
-            stage=3,
-            stride=2,
-            dilation=1,
-            style='pytorch',
-            norm_cfg=norm_cfg,
-            norm_eval=True,
-            init_cfg=dict(
-                type='Pretrained',
-                checkpoint='torchvision://resnet50')),)),
+        bbox_head=[
+            dict(
+                type='NaeHead',
+                with_avg_pool=True,
+                with_cls=True,
+                with_id=False,
+                roi_feat_size=7,
+                in_channels=2048,
+                num_classes=1,
+                bbox_coder=dict(
+                    type='DeltaXYWHBBoxCoder',
+                    target_means=[0., 0., 0., 0.],
+                    target_stds=[0.1, 0.1, 0.2, 0.2]),
+                reg_class_agnostic=False,
+                loss_cls=dict(
+                    type='CrossEntropyLoss', use_sigmoid=False, loss_weight=1.0),
+                loss_bbox=dict(type='SmoothL1Loss', beta=1.0, loss_weight=10),
+                loss_id=dict(
+                    type='OIMLoss', 
+                    num_features=256,
+                    num_pids=482,
+                    num_cq_size=500,
+                    oim_momentum=0.5,
+                    oim_scalar=30,
+                    loss_weight=1.0,
+                    ),
+                shared_head=dict(
+                    type='ResLayer',
+                    depth=50,
+                    stage=3,
+                    stride=2,
+                    dilation=1,
+                    style='pytorch',
+                    norm_cfg=norm_cfg,
+                    norm_eval=True,
+                    init_cfg=dict(
+                        type='Pretrained',
+                        checkpoint='torchvision://resnet50'))),
+            dict(
+                type='NaeHead',
+                with_avg_pool=True,
+                with_cls=True,
+                with_id=True,
+                roi_feat_size=7,
+                in_channels=2048,
+                num_classes=1,
+                bbox_coder=dict(
+                    type='DeltaXYWHBBoxCoder',
+                    target_means=[0., 0., 0., 0.],
+                    target_stds=[0.1, 0.1, 0.2, 0.2]),
+                reg_class_agnostic=False,
+                loss_cls=dict(
+                    type='CrossEntropyLoss', use_sigmoid=False, loss_weight=1.0),
+                loss_bbox=dict(type='SmoothL1Loss', beta=1.0, loss_weight=10),
+                loss_id=dict(
+                    type='OIMLoss', 
+                    num_features=256,
+                    num_pids=482,
+                    num_cq_size=500,
+                    oim_momentum=0.5,
+                    oim_scalar=30,
+                    loss_weight=1.0,
+                    ),
+                shared_head=dict(
+                    type='ResLayer',
+                    depth=50,
+                    stage=3,
+                    stride=2,
+                    dilation=1,
+                    style='pytorch',
+                    norm_cfg=norm_cfg,
+                    norm_eval=True,
+                    init_cfg=dict(
+                        type='Pretrained',
+                        checkpoint='torchvision://resnet50'))),
+        ]),
     # model training and testing settings
     train_cfg=dict(
         rpn=dict(
@@ -109,33 +151,51 @@ model = dict(
             max_per_img=2000,
             nms=dict(type='nms', iou_threshold=0.7),
             min_bbox_size=8),
-        rcnn=dict(
-            assigner=dict(
-                type='MaxIoUAssigner',
-                pos_iou_thr=0.5,
-                neg_iou_thr=0.1,
-                min_pos_iou=0.5,
-                match_low_quality=False,
-                ignore_iof_thr=-1),
-            sampler=dict(
-                type='RandomSampler',
-                num=128,
-                pos_fraction=0.5,
-                neg_pos_ub=-1,
-                add_gt_as_proposals=True),
-            pos_weight=-1,
-            debug=False)),
+        rcnn=[
+            dict(
+                assigner=dict(
+                    type='MaxIoUAssigner',
+                    pos_iou_thr=0.5,
+                    neg_iou_thr=0.5,
+                    min_pos_iou=0.5,
+                    match_low_quality=False,
+                    ignore_iof_thr=-1),
+                sampler=dict(
+                    type='RandomSampler',
+                    num=128,
+                    pos_fraction=0.25,
+                    neg_pos_ub=-1,
+                    add_gt_as_proposals=True),
+                pos_weight=-1,
+                debug=False),
+            dict(
+                assigner=dict(
+                    type='MaxIoUAssigner',
+                    pos_iou_thr=0.6,
+                    neg_iou_thr=0.6,
+                    min_pos_iou=0.6,
+                    match_low_quality=False,
+                    ignore_iof_thr=-1),
+                sampler=dict(
+                    type='RandomSampler',
+                    num=128,
+                    pos_fraction=0.25,
+                    neg_pos_ub=-1,
+                    add_gt_as_proposals=True),
+                pos_weight=-1,
+                debug=False)
+        ]),
     test_cfg=dict(
         rpn=dict(
             nms_pre=6000,
-            nms_post=300,
-            max_per_img=1000,
+            max_per_img=300,
             nms=dict(type='nms', iou_threshold=0.7),
-            min_bbox_size=16),
+            min_bbox_size=0),
         rcnn=dict(
             score_thr=0.5,
             nms=dict(type='nms', iou_threshold=0.4),
             max_per_img=100)))
+
 
 
 
@@ -177,8 +237,8 @@ test_pipeline = [
                    'scale_factor'))
 ]
 train_dataloader = dict(
-    batch_size=5,
-    num_workers=5,
+    batch_size=4,
+    num_workers=4,
     persistent_workers=True,
     sampler=dict(type='DefaultSampler', shuffle=True),
     batch_sampler=dict(type='AspectRatioBatchSampler'),

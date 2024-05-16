@@ -15,26 +15,27 @@ model = dict(
     backbone=dict(
         type='ResNet',
         depth=50,
-        num_stages=3,
-        strides=(1, 2, 2),
-        dilations=(1, 1, 1),
-        out_indices=(2, ),
+        num_stages=4,
+        out_indices=(0, 1, 2, 3),
         frozen_stages=1,
-        norm_cfg=norm_cfg,
+        norm_cfg=dict(type='BN', requires_grad=True),
         norm_eval=True,
         style='pytorch',
-        init_cfg=dict(
-            type='Pretrained',
-            checkpoint='torchvision://resnet50')),
+        init_cfg=dict(type='Pretrained', checkpoint='torchvision://resnet50')),
+    neck=dict(
+        type='FPN',
+        in_channels=[256, 512, 1024, 2048],
+        out_channels=256,
+        num_outs=5),
     rpn_head=dict(
         type='RPNHead',
-        in_channels=1024,
-        feat_channels=1024,
+        in_channels=256,
+        feat_channels=256,
         anchor_generator=dict(
             type='AnchorGenerator',
-            scales=[2, 4, 8, 16, 32],
+            scales=[8],
             ratios=[0.5, 1.0, 2.0],
-            strides=[16]),
+            strides=[4, 8, 16, 32, 64]),
         bbox_coder=dict(
             type='DeltaXYWHBBoxCoder',
             target_means=[.0, .0, .0, .0],
@@ -46,9 +47,9 @@ model = dict(
         type='NaeRoIHead',
         bbox_roi_extractor=dict(
             type='SingleRoIExtractor',
-            roi_layer=dict(type='RoIAlign', output_size=14, sampling_ratio=0),
-            out_channels=1024,
-            featmap_strides=[16]),
+            roi_layer=dict(type='RoIAlign', output_size=7, sampling_ratio=0),
+            out_channels=256,
+            featmap_strides=[4, 8, 16, 32]),
         bbox_head=dict(
             type='NaeHead',
             with_avg_pool=True,
@@ -72,19 +73,7 @@ model = dict(
                 oim_momentum=0.5,
                 oim_scalar=30,
                 loss_weight=1.0,
-                 ),
-            shared_head=dict(
-            type='ResLayer',
-            depth=50,
-            stage=3,
-            stride=2,
-            dilation=1,
-            style='pytorch',
-            norm_cfg=norm_cfg,
-            norm_eval=True,
-            init_cfg=dict(
-                type='Pretrained',
-                checkpoint='torchvision://resnet50')),)),
+                 ))),
     # model training and testing settings
     train_cfg=dict(
         rpn=dict(

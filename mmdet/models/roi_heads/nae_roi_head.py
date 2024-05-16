@@ -160,14 +160,12 @@ class NaeRoIHead(BaseRoIHead):
                 - `bbox_feats` (Tensor): Extract bbox RoI features.
         """
         # TODO: a more flexible way to decide which feature maps to use
-        bbox_feats_before = self.bbox_roi_extractor(
+        bbox_feats= self.bbox_roi_extractor(
             x[:self.bbox_roi_extractor.num_inputs], rois)
-        if self.with_shared_head:
-            bbox_feats_after = self.shared_head(bbox_feats_before)
-        cls_score, bbox_pred, id_pred = self.bbox_head(bbox_feats_before, bbox_feats_after)
+        cls_score, bbox_pred, id_pred = self.bbox_head(bbox_feats)
 
         bbox_results = dict(
-            cls_score=cls_score, bbox_pred=bbox_pred, id_pred=id_pred, bbox_feats=bbox_feats_after)
+            cls_score=cls_score, bbox_pred=bbox_pred, id_pred=id_pred, bbox_feats=bbox_feats)
         return bbox_results
 
     def bbox_loss(self, x: Tuple[Tensor],

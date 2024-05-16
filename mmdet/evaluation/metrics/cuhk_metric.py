@@ -880,7 +880,7 @@ class CUHKMetric(BaseMetric):
                 tmpdir=self.collect_dir)
         else:
             results = collect_results(self.results, size, self.collect_device)
-            querys = collect_results(self.query, 6112, self.collect_device)
+            querys = collect_results(self.query, 2900, self.collect_device)
 
         if is_main_process():
             # cast all tensors in results list to cpu

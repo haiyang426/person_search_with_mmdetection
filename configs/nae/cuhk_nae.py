@@ -177,8 +177,8 @@ test_pipeline = [
                    'scale_factor'))
 ]
 train_dataloader = dict(
-    batch_size=5,
-    num_workers=5,
+    batch_size=4,
+    num_workers=4,
     persistent_workers=True,
     sampler=dict(type='DefaultSampler', shuffle=True),
     batch_sampler=dict(type='AspectRatioBatchSampler'),
@@ -263,10 +263,10 @@ param_scheduler = [
         gamma=0.1)
 ]
 
-# optimizer
+# optimizer[]
 optim_wrapper = dict(
     type='OptimWrapper',
-    optimizer=dict(type='SGD', lr=0.003, momentum=0.9, weight_decay=0.0005),
+    optimizer=dict(type='SGD', lr=0.005, momentum=0.9, weight_decay=0.0005),
     clip_grad=dict(max_norm=10, norm_type=2),)
 
 # Default setting for scaling LR automatically

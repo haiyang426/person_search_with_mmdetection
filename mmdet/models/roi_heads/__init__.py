@@ -25,6 +25,7 @@ from .standard_roi_head import StandardRoIHead
 from .trident_roi_head import TridentRoIHead
 
 from .nae_roi_head import NaeRoIHead
+from .seqnet_roi_head import SeqNetRoIHead
 __all__ = [
     'BaseRoIHead', 'CascadeRoIHead', 'DoubleHeadRoIHead', 'MaskScoringRoIHead',
     'HybridTaskCascadeRoIHead', 'GridRoIHead', 'ResLayer', 'BBoxHead',
@@ -35,5 +36,6 @@ __all__ = [
     'SingleRoIExtractor', 'PISARoIHead', 'PointRendRoIHead', 'MaskPointHead',
     'CoarseMaskHead', 'DynamicRoIHead', 'SparseRoIHead', 'TridentRoIHead',
     'SCNetRoIHead', 'SCNetMaskHead', 'SCNetSemanticHead', 'SCNetBBoxHead',
-    'FeatureRelayHead', 'GlobalContextHead', 'MultiInstanceRoIHead', 'NaeRoIHead'
+    'FeatureRelayHead', 'GlobalContextHead', 'MultiInstanceRoIHead', 'NaeRoIHead',
+    'SeqNetRoIHead'
 ]

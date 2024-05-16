@@ -11,11 +11,11 @@
     python tools/train.py configs/nae/prw_nae.py #PRW dataset
 
     multi GPU
-    CUDA_VISIBLE_DEVICES=0, 1, 2, 3 ./tools/dist_train.sh configs/nae/prw_nae.py 4
+    CUDA_VISIBLE_DEVICES=0,1,2,3 ./tools/dist_train.sh configs/nae/prw_nae.py 4
 
 ## train on CUHK-SYSU
     single GPU
     python tools/train.py configs/nae/cuhk_nae.py #PRW dataset
 
     multi GPU
-    CUDA_VISIBLE_DEVICES=0, 1, 2, 3 ./tools/dist_train.sh configs/nae/cuhk_nae.py 4
+    CUDA_VISIBLE_DEVICES=0,1,2,3 ./tools/dist_train.sh configs/nae/cuhk_nae.py 4
