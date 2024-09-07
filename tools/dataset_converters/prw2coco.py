@@ -261,9 +261,9 @@ def main():
     #         query_count+=1
     
     print("max_ids:", ins_id)
-    print("train max_ids:", ins_id)
-    print("train ann_ids:", ann_id)
-    print(len(img_list), "images for train")
+    print("test max_ids:", ins_id)
+    print("test ann_ids:", ann_id)
+    print(len(img_list), "images for test")
     # save_dir = os.path.join(args.input, 'annotations')
     # mkdir_or_exist(save_dir)
     save_path = os.path.join(args.output, "test_cocoformat.json")
